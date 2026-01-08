@@ -1,0 +1,196 @@
+import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
+import { Search, MapPin, Filter, Briefcase, X } from 'lucide-react';
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import JobCard from '../components/jobs/JobCard';
+
+export default function Jobs() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [workType, setWorkType] = useState('all');
+  const [employmentType, setEmploymentType] = useState('all');
+  const [experienceLevel, setExperienceLevel] = useState('all');
+
+  const { data: jobs = [], isLoading } = useQuery({
+    queryKey: ['jobs'],
+    queryFn: () => base44.entities.Job.filter({ is_active: true }, '-created_date', 100)
+  });
+
+  const filteredJobs = jobs.filter(job => {
+    const matchesSearch = !searchQuery || 
+      job.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.company_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.skills?.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    const matchesWorkType = workType === 'all' || job.work_type === workType;
+    const matchesEmployment = employmentType === 'all' || job.employment_type === employmentType;
+    const matchesExperience = experienceLevel === 'all' || job.experience_level === experienceLevel;
+    
+    return matchesSearch && matchesWorkType && matchesEmployment && matchesExperience;
+  });
+
+  const activeFiltersCount = [workType, employmentType, experienceLevel].filter(f => f !== 'all').length;
+
+  const clearFilters = () => {
+    setWorkType('all');
+    setEmploymentType('all');
+    setExperienceLevel('all');
+    setSearchQuery('');
+  };
+
+  const FilterControls = () => (
+    <div className="space-y-4">
+      <div>
+        <label className="text-sm font-medium text-gray-700 mb-2 block">Work Type</label>
+        <Select value={workType} onValueChange={setWorkType}>
+          <SelectTrigger>
+            <SelectValue placeholder="All types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            <SelectItem value="remote">Remote</SelectItem>
+            <SelectItem value="hybrid">Hybrid</SelectItem>
+            <SelectItem value="onsite">On-site</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <label className="text-sm font-medium text-gray-700 mb-2 block">Employment Type</label>
+        <Select value={employmentType} onValueChange={setEmploymentType}>
+          <SelectTrigger>
+            <SelectValue placeholder="All types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            <SelectItem value="full_time">Full-time</SelectItem>
+            <SelectItem value="part_time">Part-time</SelectItem>
+            <SelectItem value="contract">Contract</SelectItem>
+            <SelectItem value="internship">Internship</SelectItem>
+            <SelectItem value="freelance">Freelance</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <label className="text-sm font-medium text-gray-700 mb-2 block">Experience Level</label>
+        <Select value={experienceLevel} onValueChange={setExperienceLevel}>
+          <SelectTrigger>
+            <SelectValue placeholder="All levels" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All levels</SelectItem>
+            <SelectItem value="entry">Entry Level</SelectItem>
+            <SelectItem value="mid">Mid Level</SelectItem>
+            <SelectItem value="senior">Senior</SelectItem>
+            <SelectItem value="lead">Lead</SelectItem>
+            <SelectItem value="executive">Executive</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {activeFiltersCount > 0 && (
+        <Button variant="ghost" onClick={clearFilters} className="w-full text-gray-500">
+          <X className="w-4 h-4 mr-2" /> Clear all filters
+        </Button>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Find Your Next Opportunity</h1>
+        <p className="text-gray-600 mt-2">Browse {jobs.length} open positions</p>
+      </div>
+
+      {/* Search & Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Input
+            placeholder="Search jobs, companies, or skills..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-12 bg-white border-gray-200"
+          />
+        </div>
+
+        {/* Desktop Filters */}
+        <div className="hidden md:flex gap-3">
+          <Select value={workType} onValueChange={setWorkType}>
+            <SelectTrigger className="w-36 h-12 bg-white">
+              <SelectValue placeholder="Work type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="remote">Remote</SelectItem>
+              <SelectItem value="hybrid">Hybrid</SelectItem>
+              <SelectItem value="onsite">On-site</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={employmentType} onValueChange={setEmploymentType}>
+            <SelectTrigger className="w-40 h-12 bg-white">
+              <SelectValue placeholder="Employment" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="full_time">Full-time</SelectItem>
+              <SelectItem value="part_time">Part-time</SelectItem>
+              <SelectItem value="contract">Contract</SelectItem>
+              <SelectItem value="internship">Internship</SelectItem>
+              <SelectItem value="freelance">Freelance</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={experienceLevel} onValueChange={setExperienceLevel}>
+            <SelectTrigger className="w-36 h-12 bg-white">
+              <SelectValue placeholder="Experience" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All levels</SelectItem>
+              <SelectItem value="entry">Entry</SelectItem>
+              <SelectItem value="mid">Mid</SelectItem>
+              <SelectItem value="senior">Senior</SelectItem>
+              <SelectItem value="lead">Lead</SelectItem>
+              <SelectItem value="executive">Executive</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Mobile Filter Button */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="md:hidden h-12 gap-2 bg-white">
+              <Filter className="w-4 h-4" />
+              Filters
+              {activeFiltersCount > 0 && (
+                <Badge className="bg-[#0A66C2] text-white ml-1">{activeFiltersCount}</Badge>
+              )}
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right">
+            <SheetHeader>
+              <SheetTitle>Filter Jobs</SheetTitle>
+            </SheetHeader>
+ 
